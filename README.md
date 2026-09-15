@@ -1,2 +1,2 @@
 # smart-study-planner
-Make Study Plans and make it happen!
+Make Study Plans and make them happen!
