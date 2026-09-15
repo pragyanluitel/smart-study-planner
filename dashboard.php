@@ -35,6 +35,26 @@ $week_stmt->bind_param("i", $user_id);
 $week_stmt->execute();
 $completed_this_week = $week_stmt->get_result()->fetch_assoc()['cnt'];
 
+// Prepare the last 7 days for the weekly Chart.js graph.
+$chart_labels = [];
+$chart_data = [];
+$completed_by_date = [];
+
+$chart_stmt = $conn->prepare("SELECT DATE(completed_at) AS completed_date, COUNT(*) AS total FROM tasks WHERE user_id = ? AND status = 'Completed' AND completed_at >= (CURDATE() - INTERVAL 6 DAY) GROUP BY DATE(completed_at)");
+$chart_stmt->bind_param("i", $user_id);
+$chart_stmt->execute();
+$chart_result = $chart_stmt->get_result();
+
+while ($row = $chart_result->fetch_assoc()) {
+    $completed_by_date[$row['completed_date']] = (int)$row['total'];
+}
+
+for ($i = 6; $i >= 0; $i--) {
+    $date = date('Y-m-d', strtotime("-$i days"));
+    $chart_labels[] = date('D', strtotime($date));
+    $chart_data[] = $completed_by_date[$date] ?? 0;
+}
+
 $reminder_stmt = $conn->prepare("SELECT * FROM tasks WHERE user_id = ? AND status = 'Pending' AND deadline <= (CURDATE() + INTERVAL 3 DAY) ORDER BY deadline ASC");
 $reminder_stmt->bind_param("i", $user_id);
 $reminder_stmt->execute();
@@ -88,6 +108,13 @@ $tasks = $task_stmt->get_result();
         <div class="stat-card">
             <h3><?php echo $completed_this_week; ?></h3>
             <p>Done This Week</p>
+        </div>
+    </div>
+
+    <div class="chart-card">
+        <h2>Tasks Completed in the Last 7 Days</h2>
+        <div class="chart-container">
+            <canvas id="weeklyChart"></canvas>
         </div>
     </div>
 
@@ -155,6 +182,45 @@ $tasks = $task_stmt->get_result();
 
 </div>
 
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.7/dist/chart.umd.min.js"></script>
+<script>
+Chart.defaults.font.family = 'Arial, sans-serif';
+
+const chart = document.getElementById('weeklyChart');
+
+new Chart(chart, {
+    type: 'bar',
+    data: {
+        labels: <?php echo json_encode($chart_labels); ?>,
+        datasets: [{
+            label: 'Completed Tasks',
+            data: <?php echo json_encode($chart_data); ?>,
+            backgroundColor: '#2c6e91',
+            borderRadius: 4
+        }]
+    },
+    options: {
+        responsive: true,
+        maintainAspectRatio: false,
+        animation: false,
+        plugins: {
+            legend: { display: false }
+        },
+        scales: {
+            x: {
+                ticks: {
+                    autoSkip: false,
+                    maxRotation: 0
+                }
+            },
+            y: {
+                beginAtZero: true,
+                ticks: { stepSize: 1 }
+            }
+        }
+    }
+});
+</script>
 <script src="js/script.js"></script>
 </body>
 </html>

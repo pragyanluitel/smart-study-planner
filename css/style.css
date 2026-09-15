@@ -70,6 +70,27 @@ body {
     margin-top: 5px;
 }
 
+/* Weekly progress chart */
+.chart-card {
+    background: white;
+    border-radius: 6px;
+    padding: 18px;
+    margin-bottom: 25px;
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.15);
+}
+
+.chart-card h2 {
+    font-size: 18px;
+    color: #2c6e91;
+    margin-bottom: 15px;
+}
+
+.chart-container {
+    position: relative;
+    width: 100%;
+    height: 280px;
+}
+
 /* Reminders box */
 .reminder-box {
     background-color: #fff8e1;
